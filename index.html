@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8" />
+<title>BETÜLÜME</title>
+<link rel="icon" type="image/x-icon" href="rose_icon.ico">
+<style>
+  html, body {
+    margin: 0; padding: 0; overflow: hidden;
+    background-color: black;
+    height: 100vh;
+    width: 100vw;
+  }
+  #welcome {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: white;
+    font-family: 'Courier New', monospace;
+    font-size: 6rem;
+    text-align: center;
+    user-select: none;
+    white-space: nowrap;
+    transition: opacity 1s ease;
+  }
+  .letter {
+    display: inline-block;
+    opacity: 0;
+    transform: translateY(-50px);
+    animation: drop 0.5s forwards;
+  }
+  @keyframes drop {
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  canvas {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    display: none;
+    background-color: black;
+  }
+  #startImg {
+    cursor: pointer;
+    width: 600px;
+    height: auto;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 10;
+    transition: opacity 1s ease;
+  }
+  .text-container {
+    display: inline-block;
+  }
+  .line {
+    white-space: nowrap;
+  }
+</style>
+</head>
+<body>
+
+<img id="startImg" src="orange_rose.png" alt="Başlat">
+<div id="welcome"></div>
+<canvas id="canvas"></canvas>
+
+<script>
+const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d");
+const welcome = document.getElementById("welcome");
+const startImg = document.getElementById("startImg");
+
+startImg.addEventListener("click", function() {
+  this.style.opacity = 0;
+  this.addEventListener('transitionend', () => {
+    this.style.display = "none";
+    start();
+  }, { once: true });
+});
+
+function resize() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+}
+window.addEventListener('resize', resize);
+resize();
+
+function heartShape(t) {
+  const scale = 22.5;
+  const x = 16 * Math.pow(Math.sin(t), 3);
+  const y = 13 * Math.cos(t) - 5 * Math.cos(2*t) - 2*Math.cos(3*t) - Math.cos(4*t);
+  return {
+    x: canvas.width / 2 + x * scale,
+    y: canvas.height / 2 - y * scale
+  };
+}
+
+class FreeLine {
+  constructor() {
+    this.segments = [];
+    this.maxLength = 20 + Math.floor(Math.random() * 15);
+    this.t = Math.random() * Math.PI * 2;
+    this.speed = 0.005 + Math.random() * 0.008;
+    this.noiseOffset = Math.random() * 900;
+    const startX = Math.random() < 0.5 ? 0 : canvas.width;
+    const startY = Math.random() * canvas.height;
+    for(let i = 0; i < this.maxLength; i++) {
+      this.segments.push({x: startX, y: startY});
+    }
+  }
+
+  update(time) {
+    this.t += this.speed;
+    if(this.t > Math.PI * 2) this.t -= Math.PI * 2;
+    const basePos = heartShape(this.t);
+
+    const waveX = 20 * Math.sin(time * 0.002 + this.noiseOffset);
+    const waveY = 15 * Math.cos(time * 0.0015 + this.noiseOffset);
+
+    const target = {
+      x: basePos.x + waveX,
+      y: basePos.y + waveY
+    };
+
+    const head = this.segments[0];
+    const dx = target.x - head.x;
+    const dy = target.y - head.y;
+    head.x += dx * 0.03;
+    head.y += dy * 0.03;
+
+    for(let i = 1; i < this.segments.length; i++) {
+      const prev = this.segments[i-1];
+      const curr = this.segments[i];
+      const dx = prev.x - curr.x;
+      const dy = prev.y - curr.y;
+      const dist = Math.sqrt(dx*dx + dy*dy);
+      const minDist = 8;
+      if(dist > minDist) {
+        curr.x += (dx / dist) * (dist - minDist);
+        curr.y += (dy / dist) * (dist - minDist);
+      }
+    }
+  }
+
+  draw(ctx) {
+    ctx.strokeStyle = 'rgba(255, 77, 0, 0.7)';
+    ctx.lineWidth = 2;
+    ctx.lineJoin = 'round';
+    ctx.lineCap = 'round';
+
+    ctx.beginPath();
+    const head = this.segments[0];
+    ctx.moveTo(head.x, head.y);
+    for(let i = 1; i < this.segments.length; i++) {
+      ctx.lineTo(this.segments[i].x, this.segments[i].y);
+    }
+    ctx.stroke();
+  }
+}
+
+const lines = [];
+const maxLines = 60;
+for(let i = 0; i < maxLines; i++) {
+  lines.push(new FreeLine());
+}
+
+function animate(time = 0) {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  for(let line of lines) {
+    line.update(time);
+    line.draw(ctx);
+  }
+  requestAnimationFrame(animate);
+}
+
+// Güncellenmiş showTextDropEffect: satır kırmayı destekler
+function showTextDropEffect(text, delayBetween, callback) {
+  const lines = text.split('\n');  // Metni satırlara ayırıyoruz
+  const textContainer = document.createElement('div');
+  textContainer.classList.add('text-container');
+
+  let totalCharsBeforeLine = 0;
+
+  lines.forEach((line) => {
+    const lineDiv = document.createElement('div');
+    lineDiv.style.whiteSpace = 'nowrap';  // Satır içi boşluk korunur
+    lineDiv.classList.add('line');
+
+    [...line].forEach((char, index) => {
+      const span = document.createElement('span');
+      span.classList.add('letter');
+      span.innerHTML = char === ' ' ? '&nbsp;' : char;
+      span.style.animationDelay = `${(totalCharsBeforeLine + index) * delayBetween}ms`;
+      lineDiv.appendChild(span);
+    });
+
+    textContainer.appendChild(lineDiv);
+    totalCharsBeforeLine += line.length;
+  });
+
+  welcome.appendChild(textContainer);
+
+  const totalTime = totalCharsBeforeLine * delayBetween + 1000;
+  setTimeout(() => {
+    if (callback) callback(textContainer);
+  }, totalTime);
+}
+
+function fadeOut(element, callback) {
+  element.style.opacity = 0;
+  element.addEventListener('transitionend', function handler() {
+    element.removeEventListener('transitionend', handler);
+    if(callback) callback();
+  });
+}
+
+function start() {
+  showTextDropEffect("BETÜLÜM", 120, () => {
+    setTimeout(() => {
+      fadeOut(welcome, () => {
+        welcome.innerHTML = '';
+        welcome.style.opacity = 1;
+        showTextDropEffect("SENİ ÇOK SEVİYORUM\nSEVGİLİM", 100, () => {
+          setTimeout(() => {
+            fadeOut(welcome, () => {
+              welcome.style.display = 'none';
+              canvas.style.display = 'block';
+              setTimeout(animate, 300);
+            });
+          }, 1000);
+        });
+      });
+    }, 1000);
+  });
+}
+</script>
+
+</body>
+</html>
