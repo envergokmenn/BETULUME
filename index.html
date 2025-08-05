@@ -18,7 +18,7 @@
     transform: translate(-50%, -50%);
     color: white;
     font-family: 'Courier New', monospace;
-    font-size: 5.5rem;
+    font-size: 6.5rem;
     text-align: center;
     user-select: none;
     white-space: nowrap;
@@ -179,9 +179,8 @@ function animate(time = 0) {
   requestAnimationFrame(animate);
 }
 
-// Güncellenmiş showTextDropEffect: satır kırmayı destekler
 function showTextDropEffect(text, delayBetween, callback) {
-  const lines = text.split('\n');  // Metni satırlara ayırıyoruz
+  const lines = text.split('\n');
   const textContainer = document.createElement('div');
   textContainer.classList.add('text-container');
 
@@ -189,7 +188,7 @@ function showTextDropEffect(text, delayBetween, callback) {
 
   lines.forEach((line) => {
     const lineDiv = document.createElement('div');
-    lineDiv.style.whiteSpace = 'nowrap';  // Satır içi boşluk korunur
+    lineDiv.style.whiteSpace = 'nowrap';
     lineDiv.classList.add('line');
 
     [...line].forEach((char, index) => {
@@ -221,26 +220,38 @@ function fadeOut(element, callback) {
 }
 
 function start() {
-  showTextDropEffect("BETÜLÜM", 120, () => {
-    setTimeout(() => {
-      fadeOut(welcome, () => {
-        welcome.innerHTML = '';
-        welcome.style.opacity = 1;
-        showTextDropEffect("SENİ ÇOK SEVİYORUM\nSEVGİLİM", 100, () => {
-          setTimeout(() => {
-            fadeOut(welcome, () => {
-              welcome.style.display = 'none';
-              canvas.style.display = 'block';
-              setTimeout(animate, 300);
-            });
-          }, 1000);
-        });
-      });
-    }, 1000);
-  });
-}
-</script>
+  const texts = [
+    "BETÜLÜM",
+    "GEÇMİŞİM",
+    "BUGÜNÜM",
+    "GELECEĞİM",
+    "İYİ Kİ VARSIN\nSEVGİLİM"
+  ];
 
+  let index = 0;
+
+  function showNextText() {
+    if (index < texts.length) {
+      showTextDropEffect(texts[index], 120, () => {
+        setTimeout(() => {
+          fadeOut(welcome, () => {
+            welcome.innerHTML = '';
+            welcome.style.opacity = 1;
+            index++;
+            showNextText();
+          });
+        }, 900);
+      });
+    } else {
+        welcome.style.display = 'none';
+        canvas.style.display = 'block';
+        setTimeout(animate, 500);
+    }
+  }
+
+  showNextText();
+}
+
+</script>
 </body>
 </html>
-
