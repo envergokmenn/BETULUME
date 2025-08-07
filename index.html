@@ -10,6 +10,7 @@
     background-color: black;
     height: 100vh;
     width: 100vw;
+    transition: background-color 4s ease;
   }
   #welcome {
     position: fixed;
@@ -18,7 +19,7 @@
     transform: translate(-50%, -50%);
     color: white;
     font-family: 'Courier New', monospace;
-    font-size: 6.5rem;
+    font-size: 5rem;
     text-align: center;
     user-select: none;
     white-space: nowrap;
@@ -36,17 +37,9 @@
       transform: translateY(0);
     }
   }
-  canvas {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
-    display: none;
-    background-color: black;
-  }
+
   #startImg {
-    cursor: pointer;
+    cursor: default;
     width: 600px;
     height: auto;
     position: fixed;
@@ -54,27 +47,168 @@
     left: 50%;
     transform: translate(-50%, -50%);
     z-index: 10;
-    transition: opacity 1s ease;
+    transition: opacity 1.5s ease;
+    opacity:0;
+    pointer-events: none;
   }
+  #startImg.visible {
+  opacity: 1;
+  pointer-events: auto;
+  cursor: pointer;
+  }
+
+@keyframes gentle-spin {
+  0%   { transform: translate(-50%, -50%) rotate(-20deg); }
+  50%  { transform: translate(-50%, -50%) rotate(20deg); }
+  100% { transform: translate(-50%, -50%) rotate(-20deg); }
+}
+
+.rotate {
+  animation: gentle-spin 5s ease-in-out infinite;
+}
+
+@keyframes wind-move {
+  0% {
+    transform: translateX(-120vw) translateY(-20px);
+    opacity: 0.7;
+  }
+  100% {
+    transform: translateX(0) translateY(0);
+    opacity: 0;
+  }
+}
+
+@keyframes fadeOutWind {
+  to { opacity: 0; }
+}
+
+.wind.fade-out {
+  animation: fadeOutWind 1s ease forwards;
+}
+
+.wind {
+  position: fixed;
+  top: 30%;
+  left: 100%;
+  width: 200px;
+  height: 3.2px;
+  background: linear-gradient(90deg, rgba(255,255,255,0.2), rgba(255,255,255,0.7), rgba(255,255,255,0.2));
+  opacity: 0.7;
+  animation: wind-move 3.5s linear infinite;
+  filter: drop-shadow(0 0 3px white);
+  border-radius: 50%;
+}
+
   .text-container {
     display: inline-block;
   }
+
   .line {
     white-space: nowrap;
   }
+
+#loveNoteContainer {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  opacity: 0;
+  display: none;
+  transition: opacity 1s ease;
+  z-index: 20;
+}
+
+#loveNote {
+  font-size: 1.5rem;
+  font-family: 'Georgia', serif;
+  text-align: center;
+  padding: 0.5rem 1rem;
+  background-color: transparent;
+  color: #aaa;
+  font-style: italic;
+  border: 2px solid #aaa;
+  border-radius: 12px;
+  outline: none;
+  min-width: 300px;
+  transition: all 0.3s ease;
+}
+
+#loveNote:focus {
+  color: white;
+  font-style: normal;
+  border-color: white;
+}
+
+#sendBtn {
+  background: transparent;
+  border: 1px solid #aaa;
+  color: #aaa;
+  margin-left: 6px;
+  padding: 6px 12px;
+  font-size: 1.5rem;
+  line-height: 2.2rem;
+  cursor: pointer;
+  border-radius: 12px;
+  user-select: none;
+  transition: color 0.3s, border-color 0.3s;
+}
+
+#sendBtn:hover {
+  color: #ff4d00;
+  border-color: #ff4d00;
+}
+
 </style>
 </head>
 <body>
 
-<img id="startImg" src="orange_rose.png" alt="Başlat">
+<img id="startImg" class="rotate" src="orange_rose.png" alt="Başlat">
+<audio id="windSound" src="wind_sound.mp3" preload="auto" autoplay loop muted></audio>
+<audio id="peaceSound" src="peace_sound.mp3" preload="auto" autoplay loop muted></audio>
 <div id="welcome"></div>
-<canvas id="canvas"></canvas>
+<div id="loveNoteContainer">
+  <input type="text" id="loveNote" value="De ki 'Seni Seviyorum'" />
+  <button id="sendBtn">→</button>
+</div>
 
 <script>
-const canvas = document.getElementById("canvas");
-const ctx = canvas.getContext("2d");
 const welcome = document.getElementById("welcome");
 const startImg = document.getElementById("startImg");
+const windSound = document.getElementById('windSound');
+const peaceSound = document.getElementById('peaceSound');
+const windsContainer = document.body;
+const windCount = 5;
+const loveNoteContainer = document.getElementById('loveNoteContainer');
+const loveNote = document.getElementById('loveNote');
+const placeholderText = "De ki 'Seni Seviyorum'";
+const sendBtn = document.getElementById('sendBtn');
+
+function createWindLines() {
+  for(let i = 0; i < windCount; i++) {
+    const windDiv = document.createElement('div');
+    windDiv.classList.add('wind');
+    windDiv.style.top = `${20 + i * 15}%`;
+    windDiv.style.animationDelay = `${i * 0.7}s`;
+    windsContainer.appendChild(windDiv);
+  }
+}
+
+function onFirstClick() {
+  windSound.muted = false;
+  windSound.volume = 0.4;
+  windSound.play();
+
+  if(document.querySelectorAll('.wind').length === 0) {
+      createWindLines();
+  }
+
+  setTimeout(() => {
+      startImg.classList.add('visible');
+  }, 1500);
+  document.removeEventListener('click', onFirstClick);
+}
+
+document.addEventListener('click', onFirstClick);
 
 startImg.addEventListener("click", function() {
   this.style.opacity = 0;
@@ -84,100 +218,272 @@ startImg.addEventListener("click", function() {
   }, { once: true });
 });
 
-function resize() {
-  canvas.width = window.innerWidth;
-  canvas.height = window.innerHeight;
-}
-window.addEventListener('resize', resize);
-resize();
-
-function heartShape(t) {
-  const scale = 22.5;
-  const x = 16 * Math.pow(Math.sin(t), 3);
-  const y = 13 * Math.cos(t) - 5 * Math.cos(2*t) - 2*Math.cos(3*t) - Math.cos(4*t);
-  return {
-    x: canvas.width / 2 + x * scale,
-    y: canvas.height / 2 - y * scale
-  };
+function fadeIn(element) {
+  element.style.display = 'block';
+  setTimeout(() => {
+    element.style.opacity = '1';
+  }, 10);
 }
 
-class FreeLine {
-  constructor() {
-    this.segments = [];
-    this.maxLength = 20 + Math.floor(Math.random() * 15);
-    this.t = Math.random() * Math.PI * 2;
-    this.speed = 0.005 + Math.random() * 0.008;
-    this.noiseOffset = Math.random() * 900;
-    const startX = Math.random() < 0.5 ? 0 : canvas.width;
-    const startY = Math.random() * canvas.height;
-    for(let i = 0; i < this.maxLength; i++) {
-      this.segments.push({x: startX, y: startY});
+function fadeOut(element, callback) {
+  element.style.display = 'block';
+  setTimeout(() => {
+    element.style.opacity = '0';
+  }, 10);
+
+  element.addEventListener('transitionend', function handler(event) {
+    if(event.propertyName === 'opacity') {
+      element.removeEventListener('transitionend', handler);
+      element.style.display = 'none';
+      if (callback) callback();
     }
+  });
+}
+
+function fadeOutText(element, callback) {
+  element.style.opacity = 0;
+  element.addEventListener('transitionend', function handler() {
+    element.removeEventListener('transitionend', handler);
+    if(callback) callback();
+  });
+}
+
+loveNote.addEventListener('focus', () => {
+  if (loveNote.value === placeholderText) {
+    loveNote.value = '';
+    loveNote.style.color = 'white';
+    loveNote.style.fontStyle = 'normal';
   }
+});
 
-  update(time) {
-    this.t += this.speed;
-    if(this.t > Math.PI * 2) this.t -= Math.PI * 2;
-    const basePos = heartShape(this.t);
+loveNote.addEventListener('blur', () => {
+  if (loveNote.value.trim() === '') {
+    loveNote.value = placeholderText;
+    loveNote.style.color = '#aaa';
+    loveNote.style.fontStyle = 'italic';
+  }
+});
 
-    const waveX = 20 * Math.sin(time * 0.002 + this.noiseOffset);
-    const waveY = 15 * Math.cos(time * 0.0015 + this.noiseOffset);
+loveNote.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    submitLoveNote();
+  }
+});
 
-    const target = {
-      x: basePos.x + waveX,
-      y: basePos.y + waveY
-    };
-
-    const head = this.segments[0];
-    const dx = target.x - head.x;
-    const dy = target.y - head.y;
-    head.x += dx * 0.03;
-    head.y += dy * 0.03;
-
-    for(let i = 1; i < this.segments.length; i++) {
-      const prev = this.segments[i-1];
-      const curr = this.segments[i];
-      const dx = prev.x - curr.x;
-      const dy = prev.y - curr.y;
-      const dist = Math.sqrt(dx*dx + dy*dy);
-      const minDist = 8;
-      if(dist > minDist) {
-        curr.x += (dx / dist) * (dist - minDist);
-        curr.y += (dy / dist) * (dist - minDist);
-      }
+function shake(element) {
+  let count = 0;
+  const interval = setInterval(() => {
+    element.style.transform = (count % 2 === 0) ? 'translateX(-15px)' : 'translateX(15px)';
+    count++;
+    if (count > 5) {
+      clearInterval(interval);
+      element.style.transform = 'translateX(0)';
     }
-  }
-
-  draw(ctx) {
-    ctx.strokeStyle = 'rgba(255, 77, 0, 0.7)';
-    ctx.lineWidth = 2;
-    ctx.lineJoin = 'round';
-    ctx.lineCap = 'round';
-
-    ctx.beginPath();
-    const head = this.segments[0];
-    ctx.moveTo(head.x, head.y);
-    for(let i = 1; i < this.segments.length; i++) {
-      ctx.lineTo(this.segments[i].x, this.segments[i].y);
-    }
-    ctx.stroke();
-  }
+  }, 50);
 }
 
-const lines = [];
-const maxLines = 60;
-for(let i = 0; i < maxLines; i++) {
-  lines.push(new FreeLine());
-}
+function submitLoveNote() {
+  const text = loveNote.value.trim().toLowerCase();
 
-function animate(time = 0) {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  for(let line of lines) {
-    line.update(time);
-    line.draw(ctx);
+  if (text === 'seni seviyorum') {
+    fadeOut(loveNoteContainer);
+
+    document.querySelectorAll('.wind').forEach(wind => {
+      wind.classList.add('fade-out')
+    });
+
+    setTimeout(() => {
+      document.body.style.backgroundColor = "white";
+
+      let volume = windSound.volume;
+      const fadeAudio = setInterval(() => {
+        if (volume > 0.01) {
+          volume -= 0.01;
+          windSound.volume = volume;
+        } else {
+          clearInterval(fadeAudio);
+          windSound.pause();
+          windSound.currentTime = 0;
+          peaceSound.muted = false;
+          peaceSound.volume = 0.4;
+          peaceSound.play();
+        }
+      }, 60);
+
+      setTimeout(() => {
+        const flowerCanvas = document.createElement('canvas');
+        flowerCanvas.id = "canvas";
+        document.body.appendChild(flowerCanvas);
+        const ctx = flowerCanvas.getContext('2d');
+
+        Object.assign(flowerCanvas.style, {
+          position: "fixed",
+          top: "0",
+          left: "0",
+          width: "100vw",
+          height: "100vh",
+          opacity: "0",
+          backgroundColor: "white",
+          transition: "opacity 3s ease",
+          zIndex: "10"
+        });
+
+        setTimeout(() => {
+          flowerCanvas.style.opacity = "1";
+        }, 50);
+
+        function resize() {
+          flowerCanvas.width = window.innerWidth;
+          flowerCanvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        function drawFlower(x, y, petalCount, petalRadius, centerRadius, color, rotation, opacity) {
+          ctx.save();
+          ctx.translate(x, y);
+          ctx.rotate(rotation);
+
+          ctx.globalAlpha = opacity;
+
+          for (let i = 0; i < petalCount; i++) {
+            ctx.beginPath();
+            ctx.fillStyle = color;
+            ctx.ellipse(0, petalRadius, petalRadius / 2, petalRadius, 0, 0, 2 * Math.PI);
+            ctx.fill();
+            ctx.rotate((2 * Math.PI) / petalCount);
+          }
+
+          ctx.beginPath();
+          ctx.fillStyle = 'yellow';
+          ctx.arc(0, 0, centerRadius, 0, 2 * Math.PI);
+          ctx.fill();
+
+          ctx.restore();
+          ctx.globalAlpha = 1;
+        }
+
+        const colors = [
+          'rgba(255, 69, 0, 0.8)',
+          'rgba(255, 140, 0, 0.8)',
+          'rgba(255, 215, 0, 0.8)',
+          'rgba(50, 205, 50, 0.8)',
+          'rgba(30, 144, 255, 0.8)',
+          'rgba(138, 43, 226, 0.8)',
+          'rgba(255, 20, 147, 0.8)'
+        ];
+
+        const flowers = [];
+        const flowersToShow = [];
+
+        function randomRange(min, max) {
+          return Math.random() * (max - min) + min;
+        }
+
+        function distance(x1, y1, x2, y2) {
+          return Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2);
+        }
+
+        function isOverlapping(x, y, radius) {
+          for (let f of flowers) {
+            const minDist = radius + f.petalRadius + 50;
+            if (distance(x, y, f.x, f.y) < minDist) {
+              return true;
+            }
+          }
+          return false;
+        }
+
+        function Flower() {
+          this.petalCount = Math.floor(randomRange(5, 9));
+          this.petalRadius = randomRange(20, 50);
+          this.centerRadius = this.petalRadius / 3;
+
+          let newColor;
+          do {
+            newColor = colors[Math.floor(Math.random() * colors.length)];
+          } while (flowers.length > 0 && newColor === flowers[flowers.length - 1].color);
+
+          this.color = newColor;
+          this.rotation = Math.random() * Math.PI * 2;
+          this.rotationSpeed = randomRange(0.005, 0.008);
+
+          this.opacity = 0;
+
+          let tries = 0;
+          do {
+            this.x = randomRange(this.petalRadius + 10, flowerCanvas.width - this.petalRadius - 10);
+            this.y = randomRange(this.petalRadius + 10, flowerCanvas.height - this.petalRadius - 10);
+            tries++;
+            if (tries > 1000) break;
+          } while (isOverlapping(this.x, this.y, this.petalRadius));
+        }
+
+        Flower.prototype.update = function () {
+          this.rotation += this.rotationSpeed;
+
+          if (this.opacity < 1) {
+            this.opacity += 0.01;
+            if (this.opacity > 1) this.opacity = 1;
+          }
+        };
+
+        Flower.prototype.draw = function () {
+          drawFlower(this.x, this.y, this.petalCount, this.petalRadius, this.centerRadius, this.color, this.rotation, this.opacity);
+        };
+
+        function tryAddFlower() {
+          let tries = 0;
+          while (tries < 1000) {
+            const f = new Flower();
+            if (!isOverlapping(f.x, f.y, f.petalRadius)) {
+              flowers.push(f);
+              return true;
+            }
+            tries++;
+          }
+          return false;
+        }
+
+        while (tryAddFlower()) { }
+
+        let currentFlowerIndex = 0;
+        const addFlowerInterval = setInterval(() => {
+          if (currentFlowerIndex < flowers.length) {
+            flowersToShow.push(flowers[currentFlowerIndex]);
+            currentFlowerIndex++;
+          } else {
+            clearInterval(addFlowerInterval);
+          }
+        }, 1200);
+
+        function animate() {
+          ctx.clearRect(0, 0, flowerCanvas.width, flowerCanvas.height);
+          ctx.fillStyle = 'white';
+          ctx.fillRect(0, 0, flowerCanvas.width, flowerCanvas.height);
+
+          flowersToShow.forEach(flower => {
+            flower.update();
+            flower.draw();
+          });
+
+          requestAnimationFrame(animate);
+        }
+
+        animate();
+      }, 3000);
+
+    }, 1000);
+  } else {
+    shake(loveNote);
   }
-  requestAnimationFrame(animate);
 }
+    
+
+sendBtn.addEventListener('click', () => {
+  submitLoveNote();
+});
 
 function showTextDropEffect(text, delayBetween, callback) {
   const lines = text.split('\n');
@@ -211,21 +517,11 @@ function showTextDropEffect(text, delayBetween, callback) {
   }, totalTime);
 }
 
-function fadeOut(element, callback) {
-  element.style.opacity = 0;
-  element.addEventListener('transitionend', function handler() {
-    element.removeEventListener('transitionend', handler);
-    if(callback) callback();
-  });
-}
-
 function start() {
   const texts = [
-    "BETÜLÜM",
-    "GEÇMİŞİM",
-    "BUGÜNÜM",
-    "GELECEĞİM",
-    "İYİ Kİ VARSIN\nSEVGİLİM"
+    "Sesim rügzar gibi\nsert çıkmış olsa da,",
+    "Kalbim her zaman\ntatlı bir meltem gibi\nfısıldamak ister sana.",
+    "Seni Çok Seviyorum\nSevgilim"
   ];
 
   let index = 0;
@@ -234,7 +530,7 @@ function start() {
     if (index < texts.length) {
       showTextDropEffect(texts[index], 120, () => {
         setTimeout(() => {
-          fadeOut(welcome, () => {
+          fadeOutText(welcome, () => {
             welcome.innerHTML = '';
             welcome.style.opacity = 1;
             index++;
@@ -244,11 +540,9 @@ function start() {
       });
     } else {
         welcome.style.display = 'none';
-        canvas.style.display = 'block';
-        setTimeout(animate, 500);
+        fadeIn(loveNoteContainer);
     }
   }
-
   showNextText();
 }
 
